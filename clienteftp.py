@@ -1,109 +1,94 @@
-import socket
+iimport socket
 import time
 import getpass
 
-LOGIN = 'userftp'
+user = 'userftp'
 PASSW = 'r3d3sf1s1c@s'
 
 HOST = '192.100.230.21'
 PORT = 21
-
-BUFF_SIZE = 2048
-
-def recv_timeout(s,timeout=2):
-    s.setblocking(0)
-    total_data=[];data='';begin=time.time()
-    while True:
-        if total_data and time.time()-begin>timeout:
+#espacio de memoria reservada para el archivo 2048
+def tiempo(s):
+	timeout=1
+    s.setblocking(0) #se declara el socket para que no se cierre
+    Tdatos=[] #se declara una lista
+    inicio=time.time() #inicia timer sin parametros
+    while True: #deja abierto el socket con el bucle
+        if Tdatos and time.time()-inicio>timeout: #checa si hay datos en la lista o si el incio - el tiempo actual son mayor que timeout
             break
-        elif time.time()-begin>timeout*2:
-            break
-        try:
-            data=s.recv(BUFF_SIZE)
-            if data:
-                 total_data.append(data)
-                begin=time.time()
-            else:
-                time.sleep(0.1)
-        except:
-            pass
-    return ''.join(total_data)
-
-def recv_file(s,filename,timeout=1):
-    s.setblocking(0)
-    somedatarecved=False;data='';begin=time.time()
-    f = open(filename, 'wb')
-    while True:
-        if somedatarecved and time.time()-begin>timeout:
-            break
-        elif time.time()-begin>timeout*2:
+        elif time.time()-inicio>timeout*2:
             break
         try:
-            data=s.recv(BUFF_SIZE)
-            if data:
-                somedatarecved = True
-                f.write(data)
-                f.flush()
-                begin=time.time()
+            datos=s.recv(2048) 
+            if datos:
+                 Tdatos.append(datos)
+                 inicio=time.time()
             else:
-                time.sleep(0.1)
+                time.sleep(0.2)
         except:
             pass
-    f.close()
+    return ''.join(Tdatos)
 
-def request(s, message):
-    request = message + '\r\n'
-    #print request
-    s.send(request)
+def recv_archivo(s,archivo):
+	timeout=1
+    s.setblocking(0)
+    Rdatos=False #datos recibidos
+    inicio=time.time()
+    archivo = open(archivo, 'archivo')
+    while True:
+        if Rdatos and time.time()-inicio>timeout:
+            break
+        try:
+            datos=s.recv(2048)
+            if datos:
+                Rdatos = True
+                archivo.write(datos)
+              
+                inicio=time.time()
+            else:
+                time.sleep(1)
+        except:
+            pass
+    archivo.close()
 
-    response = recv_timeout(s)
-    #print response
-    return response
-
- s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def peticion(s,mej):
+	peticion = mej
+    s.send(peticion)
+    respuesta = tiempo(s)
+    return respuesta
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
     return s
 
-def open_child_socket(s):
-    response = request(s, 'PASV')
-    if not process_response(response, 'PASV'):
-        return None
-
-    iptext = response.split(' ')[4].replace('(', '').replace(')','').split(',')
-    host = '%(1)s.%(2)s.%(3)s.%(4)s' % { '1' : iptext[0], '2' : iptext[1], '3' : iptext[2], '4' : iptext[3] }
-    port = int(iptext[4]) * 256 + int(iptext[5])
-
-    return open_socket(host, port)
-
-def process_response(response, command):
+def respuesta(response, FTPcomando):
     if response == '':
         return False
-    isValid = True
+    Val = True
     for a in response.splitlines():
-        if int(response[0:3]) not in responsehash[command]:
-            isValid = False
+        if int(response[0:3]) not in responsehash[FTPcomando]:
+            Val = False
              break
-    return isValid
+    return Val
 
 def ls(s):
-    file_socket = open_child_socket(s)
-    if file_socket == None:
+    socketArchivo = socket1(s)
+    if socketArchivo == None:
         print 'No se pudo'
         return False
 
-    if not process_response(request(s, 'LIST'), 'LIST'):
+    if not respuesta(peticion(s, 'LIST'), 'LIST'):
         print 'No se pudo'
         return False
 
-    print recv_timeout(file_socket)
+    print tiempo(socketArchivo)
 
-    file_socket.close()
+    socketArchivo.close()
 
 def login(s, user, passw):
-    if not process_response(request(s, 'USER ' + user), 'USER'):
+    if not respuesta(peticion(s, 'USER ' + user), 'USER'):
         print 'No existe'
         return False
-    if not process_response(request(s, 'PASS ' + passw), 'PASS'):
+    if not respuesta(peticion(s, 'PASS ' + passw), 'PASS'):
         print 'Contraseña erronea'
         return False
     print 'Conexion exitosa!!'
@@ -111,144 +96,124 @@ def login(s, user, passw):
 
 def logout(s):
     ret = True
-    if not process_response(request(s, 'QUIT'), 'QUIT'):
-        print 'Falló'
+    if not respuesta(peticion(s, 'QUIT'), 'QUIT'):
+        print "Falló"
         ret = False
     s.close()
-    print 'Desconectado'
+    print "Desconectado"
     return ret
 
 def cd(s, path):
-    if not process_response(request(s, 'CWD ' + path), 'CWD'):
+    if not respuesta(peticion(s, 'CWD ' + path), 'CWD'):
         print "No se puede ir al siguiente directorio " + path
         return False
     print 'Ok'
     return True
     
 def pwd(s):
-    response = request(s, 'PWD')
-    if not process_response(response, 'PWD'):
+    response = peticion(s, 'PWD')
+    if not respuesta(response, 'PWD'):
         print 'Falló'
         return False
     print response[4:]
     return True
 
 def mkd(s, dir):
-    if not process_response(request(s, 'MKD ' + dir), 'MKD'):
+    if not respuesta(peticion(s, 'MKD ' + dir), 'MKD'):
         print "No se puede crear el directorio"
         return False
     print 'Ok'
     return True
 
 def rmd(s, dir):
-    if not process_response(request(s, 'RMD ' + dir), 'RMD'):
+    if not respuesta(peticion(s, 'RMD ' + dir), 'RMD'):
         print "No se puede mover el directorio"
         return False
     print 'Ok'
  return True
 
-def upload(s, filename):
-    file_stream = open_child_socket(s)
+def upload(s, archivo):
+    file_stream = socket1(s)
     if file_stream == None:
         print 'Falló'
         return False
 
-    if not process_response(request(s, 'STOR ' + filename), 'STOR'):
+    if not respuesta(peticion(s, 'STOR ' + archivo), 'STOR'):
         print"No se puede subir el archivo"
         return False
 
     buffer = "hola"
-    f = open(filename, 'rb')
+    archivo = open(archivo, 'rb')
     while True:
-        buffer = f.read(BUFF_SIZE)
+        buffer = archivo.read(2048)
         if buffer == "":
             break
         file_stream.send(buffer)
-    f.close()
+    archivo.close()
     file_stream.close()
- print recv_timeout(s)
+ print tiempo(s)
     print 'Ok'
     return True
 
-def download(s, filename):
-    file_stream = open_child_socket(s)
+def download(s, archivo):
+    file_stream = socket1(s)
     if file_stream == None:
         print 'Falló'
         return False
-
-    if not process_response(request(s, 'RETR ' + filename), 'RETR'):
+    if not respuesta(peticion(s, 'RETR ' + archivo), 'RETR'):
         print "No se puede descargar el achivo"
         return False
-
-    recv_file(file_stream, filename+"_")
+    recv_archivo(file_stream, archivo+"_")
     file_stream.close()
-    print recv_timeout(s)
-    print 'Ok'
+    print tiempo(s)
+    print "Ok"
     return True
 
-def rm(s, filename):
-if not process_response(request(s, 'DELE ' + filename), 'DELE'):
+def rm(s, archivo):
+	if not respuesta(peticion(s, 'DELE ' + archivo), 'DELE'):
         print "No se puede mover el archivo"
         return False
-    print 'Ok'
+    print "Ok"
     return True
 
 def connect(host, port):
-    client_socket = open_socket(HOST, PORT)
-
-    if not process_response(recv_timeout(client_socket), 'CONN'):
+    clienteFTP = socket1(HOST, PORT)
+    if not respuesta(tiempo(clienteFTP), 'CONN'):
         print "No se puede conectar al " + HOST + ':' + str(PORT)
-        client_socket = None
+        clienteFTP = None
     else:
         print 'Conectado al ' + HOST + ':' + str(PORT)
+    return clienteFTP
 
-    return client_socket
+def main():
+    
+	while True:
+        parametro = str(raw_input()).split(' ')
+        FTPcomando = parametro[0]
 
-if __name__ == '__main__':
-
-    client_socket = None
- while True:
-        args = str(raw_input()).split(' ')
-        command = args[0]
-
-        if command == 'connect':
-            if args == 3:
-                host = args[1]
-                port = int(args[2])
-                client_socket = connect(host, port)
+        if FTPcomando == "Conectado":
+            if parametro == 3:
+                host = parametro[1]
+                port = int(parametro[2])
+                clienteFTP = connect(host, port)
             else:
-                client_socket = connect(HOST, PORT)
+                clienteFTP = connect(HOST, PORT)
             continue
 
-        if client_socket == None:
-            print'Conectate a n servidor'
-            continue
-
-        if command == 'login':
+        if FTPcomando == 'login':
             user = str(raw_input('Usuario: '))
             passw = getpass.getpass()
             if user == '':
-   login(client_socket, LOGIN, PASSW)
+				login(clienteFTP, user, PASSW)
             else:
-                login(client_socket, user, passw)
-        elif command == 'pwd':
-            pwd(client_socket)
-        elif command == 'cd':
-            cd(client_socket, args[1])
-        elif command == 'ls':
-            ls(client_socket)
-        elif command == 'mkdir':
-            mkd(client_socket, args[1])
-        elif command == 'rm':
-            rm(client_socket, args[1])
-        elif command == 'rmd':
-            rmd(client_socket, args[1])
-        elif command == 'upload':
-            upload(client_socket, args[1])
-        elif command == 'download':
-            download(client_socket, args[1])
-        elif command == 'logout':
-            logout(client_socket)
-exit()
-        else:
-            print 'No existe esa operacion'
+                login(clienteFTP, user, passw)
+			elif FTPcomando == 'pwd': pwd(clienteFTP)
+			elif FTPcomando == 'cd': cd(clienteFTP, parametro[1])
+			elif FTPcomando == 'ls': ls(clienteFTP)
+			elif FTPcomando == 'mkdir': mkd(clienteFTP, parametro[1])
+			elif FTPcomando == 'rm': rm(clienteFTP, parametro[1])
+			elif FTPcomando == 'rmd': rmd(clienteFTP, parametro[1])
+			elif FTPcomando == 'upload': upload(clienteFTP, parametro[1])
+			elif FTPcomando == 'download': download(clienteFTP, parametro[1])
+			elif FTPcomando == 'logout': logout(clienteFTP)
+			else: print "No existe esa operacion"
