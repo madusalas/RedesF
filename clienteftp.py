@@ -1,63 +1,93 @@
-import asyncore
+#!/usr/local/bin/python
 import socket
-import SSL
+import sys 
+import getpass
 
-# Client Section
-
-class Cliente(asyncore.dispatcher):
-
-    def __init__(self, host, port):
-        asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM) #conexion C/S
-        self.connect((host, port))
-    connectionPhase = 1
+class FTP:
+  
+  def __init__(self, host,port,timeout):
+		
+    self.connect(host,port,timeout=_GLOBAL_DEFAULT_TIMEOUT)
+		self.LOGIN ()
+  
+	def connect(self, host, port, timeout):  
+		if host != '':
+			self.host = host
+		if port > 0:
+			self.port = port
+		self.sock = socket.create_connection((self.host, self.port),timeout)
+		self.file = self.sock.makefile('rb')
+		return print('Success conection')
 	
-    def handle_read(self): #manejador de respuestas
-        print "connectionPhase =", self.connectionPhase
-    if self.connectionPhase < 3: # authentication phase
-            data = self.recv(1024) #espero recibir los datos con un buffer de 1024
-            print 'Received:', data
-         # connectionPhase = 3 when this IF loop is done
-        elif self.connectionPhase == 3: # receiving data for User
-            data = self.recv(1024) #recv(buffer_size)
-            print 'Received data - forward to User:', data
+	def LOGIN ():
+		user = input("Username [%s]: " % getpass.getuser())
+    password = input("Password [%s]: " getpass.getpass())
+	  print("Welcome [%s]: "%getpass.getuser())
+#Transferir archivos de texto en ambos sentidos (ASCII TYPE)
+#Transferir archivos binarios en ambos sentidos (IMAGE TYPE)
+	def parse_pasv(self, msg): #!
+        nmsg = self.get_between(msg, '(', ')')
+        p = nmsg.split(',')
+        return '.'.join(p[:4]), int(p[4])*256 + int(p[5])
+  def recv(self):
+		rec = self.sock.recv(1024)
+		print(rec)
+		return rec
+	
+	def send(self,mes=''):
+		 self.sock.send(mes + ('', '\r\n')
+		 print('Message send successfully')
+	def relay(self, mes='', expect=False, filt=''):
+		self.send(mes, True, filt)
+		return self.recv(expect)  
+#Listado del directorio local y remoto
+	def LIST(): #Gives list files in a directory (this FTP request is the same as the ls command)
+		self.PASV()
+        msg = self.sock_main.relay('LIST')
+#Permitir navegar el directorio local y remoto
+	def CWD(path): #Changes working directory.
+		self.sock_main.relay('CWD '+dname, 250)
 
-# Connects to User
-class RelayConnection(asyncore.dispatcher):
-    def __init__(self, client, sock):
-        asyncore.dispatcher.__init__(self)
-        self.client = client
-        print "connecting to %s..." % str(sock)
+	def CDUP ():
+		self.sock_main.relay('CDUP')
 
-    def handle_connect(self):
-        print "connected."
-        # Allow reading once the connection on the other side is open.
-        self.client.is_readable = True
+#Permitir borrar, cambiar el nombre y/o atributos (CHMOD) a un archivo o directorio en el host remoto
 
-    def handle_read(self):
-        self.client.send(self.recv(1024))
+	def RNFR(): #RENAME FROM 
+	def RNTO(): #RENAME TO (RNTO)
+	def DELE (self,path):	#Deletes a file.
+		os.remove(path)
 
-class RelayClient(asyncore.dispatcher):
-    def __init__(self, server, client, sock):
-        asyncore.dispatcher.__init__(self, client)
-        self.is_readable = False
-        self.relay = RelayConnection(self, sock)
+	def MKD (self,path):	#Makes a directory.
+		self.sock_main.relay('MKD '+dname, 257)
+		
+	def HELP ():	#Gives help information.
+	
+	def think(self, thought):
+        print "!!!", str(thought), '\n'
+		
+	def PASV (self)
+		self.pasv = false
+		 if self.sock_pasv:
+            self.think('Checking for open socket')
+            assert not self.sock_pasv.open # make sure there is no port open
+		msg = self.sock_main.relay('PASV')
+        newip, newport = self.handle.parse_pasv(msg)
 
-    def handle_read(self):
-        self.relay.send(self.recv(1024))
+        # make passive connection
+        self.sock_pasv = mk_socket(2, newip, newport)
 
-    def handle_close(self):
-        print "Closing..."
-        # If the client disconnects, close the relay connection.
-        self.relay.close()
-        self.close()
-
-    def readable(self):
-        return self.is_readable
+        return newip, newport # return the passive IP/PORT
+	def QUIT ():
+		raise SystemExit
 
 if __name__ == "__main__":
-    # First connection 
-    connectionPhase = 1
-    c = Cliente('192.100.230.21', 21) 
-
-    asyncore.loop()
+	C = FTP()
+	try:
+		C.connect("192.100.230.21", 21)
+	except socket.error:
+        print("Could not connect")
+	C.LOGIN()
+	#Send some data to remote server
+	message = ("GET / HTTP/1.1\r\n\r\n")
+	C.send(message.encode('utf-8'))
