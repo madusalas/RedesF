@@ -1,93 +1,100 @@
 #!/usr/local/bin/python
 import socket
-import sys 
-import getpass
+import os
+from os import walk
 
-class FTP:
-  
-  def __init__(self, host,port,timeout):
+socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+path = '/'
+
+def PRINT_LOCAL(path):
+    print (dirnames)
+    print (directories)
+    print (filenames)
+    print ('\n')
 		
-    self.connect(host,port,timeout=_GLOBAL_DEFAULT_TIMEOUT)
-		self.LOGIN ()
-  
-	def connect(self, host, port, timeout):  
-		if host != '':
-			self.host = host
-		if port > 0:
-			self.port = port
-		self.sock = socket.create_connection((self.host, self.port),timeout)
-		self.file = self.sock.makefile('rb')
-		return print('Success conection')
+def CONNECTION():
+    socket.connect((input("Enter FTP Address: "), 21))
+    RECIEVE()
+
+def LOGIN ():
+    #user = input("Username")
+    user = 'userftp'
+    #password = input("Password")
+    password = 'r3d3sf1s1c@s'
+    user='USER '+user
+    password='PASS '+password
+    RELAY(user)
+    RELAY(password)
+
+def RECIEVE():
+    rec = socket.recv(1024)
+    print(rec)
+    return rec
 	
-	def LOGIN ():
-		user = input("Username [%s]: " % getpass.getuser())
-    password = input("Password [%s]: " getpass.getpass())
-	  print("Welcome [%s]: "%getpass.getuser())
-#Transferir archivos de texto en ambos sentidos (ASCII TYPE)
-#Transferir archivos binarios en ambos sentidos (IMAGE TYPE)
-	def parse_pasv(self, msg): #!
-        nmsg = self.get_between(msg, '(', ')')
-        p = nmsg.split(',')
-        return '.'.join(p[:4]), int(p[4])*256 + int(p[5])
-  def recv(self):
-		rec = self.sock.recv(1024)
-		print(rec)
-		return rec
+def SEND(mes=''):
+    socket.send(bytes(mes + ('\r\n'),"UTF-8"))
+    print('Message send successfully')
 	
-	def send(self,mes=''):
-		 self.sock.send(mes + ('', '\r\n')
-		 print('Message send successfully')
-	def relay(self, mes='', expect=False, filt=''):
-		self.send(mes, True, filt)
-		return self.recv(expect)  
-#Listado del directorio local y remoto
-	def LIST(): #Gives list files in a directory (this FTP request is the same as the ls command)
-		self.PASV()
-        msg = self.sock_main.relay('LIST')
-#Permitir navegar el directorio local y remoto
-	def CWD(path): #Changes working directory.
-		self.sock_main.relay('CWD '+dname, 250)
+def RELAY(mes=''):
+    SEND(mes)
+    return RECIEVE() 
 
-	def CDUP ():
-		self.sock_main.relay('CDUP')
-
-#Permitir borrar, cambiar el nombre y/o atributos (CHMOD) a un archivo o directorio en el host remoto
-
-	def RNFR(): #RENAME FROM 
-	def RNTO(): #RENAME TO (RNTO)
-	def DELE (self,path):	#Deletes a file.
-		os.remove(path)
-
-	def MKD (self,path):	#Makes a directory.
-		self.sock_main.relay('MKD '+dname, 257)
-		
-	def HELP ():	#Gives help information.
+def MENU():
+    menu = '''
+    |-------------------------------------|
+    |             Opciones                |
+    |-------------------------------------|
+    | 1.Listado local                     |
+    | 2.Listado remoto                    | 
+    | 3.Cambiar directorio local          | 
+    | 4.Cambiar directorio remoto         |
+    | 5.Descargar archivos                | 
+    | 6.Subir archivos                    | 
+    | 7.Borrar                            |
+    | 8.Cambiar nombre                    | 
+    | 9.Cambiar permisos                  |
+    | 0.Salir                             |
+    |-------------------------------------|
+    Seleccione una opcion
 	
-	def think(self, thought):
-        print "!!!", str(thought), '\n'
-		
-	def PASV (self)
-		self.pasv = false
-		 if self.sock_pasv:
-            self.think('Checking for open socket')
-            assert not self.sock_pasv.open # make sure there is no port open
-		msg = self.sock_main.relay('PASV')
-        newip, newport = self.handle.parse_pasv(msg)
+    '''
+    return menu
 
-        # make passive connection
-        self.sock_pasv = mk_socket(2, newip, newport)
+def NAVIGATE(n):
+    if n == '0':
+        print('you select 0')
+    elif n=='1':
+       PRINT_LOCAL(path)
+       input('')
+    elif n=='2':
+        print('you select 2')
+    elif n=='3':
+        print('you select 3')
+    elif n=='4':
+        print('you select 4')
+    elif n=='5':
+        print('you select 5')
+    elif n=='6':
+        print('you select 6')
+    elif n=='7':
+        print('you select 7')
+    elif n=='8':
+        print('you select 8')
+    elif n=='9':
+        print('you select 9')
+    else:
+        print('Esa opcion no existe')
+CONNECTION()
+LOGIN()
+menu = MENU()
+n = ' '
+while n != '0':
+    os.system('clear')
+    print(menu)
+    n = input(' ')
+    NAVIGATE(n)
+	
 
-        return newip, newport # return the passive IP/PORT
-	def QUIT ():
-		raise SystemExit
 
-if __name__ == "__main__":
-	C = FTP()
-	try:
-		C.connect("192.100.230.21", 21)
-	except socket.error:
-        print("Could not connect")
-	C.LOGIN()
-	#Send some data to remote server
-	message = ("GET / HTTP/1.1\r\n\r\n")
-	C.send(message.encode('utf-8'))
+socket.close()
+
