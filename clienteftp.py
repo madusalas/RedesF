@@ -26,7 +26,7 @@ def LOGIN ():
     RELAY(user)
     RELAY(password)
 
-def RECIEVE():
+def RECEIVE():
     rec = socket.recv(1024)
     print(rec)
     return rec
