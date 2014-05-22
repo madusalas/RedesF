@@ -1,4 +1,7 @@
 #!/usr/local/bin/python
+import socket
+import os
+from os import walk
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 dir = '/'
